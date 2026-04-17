@@ -1,0 +1,14 @@
+[
+  {
+    "name": "bairddemofiles",
+    "path": "/Files",
+    "target": {
+      "type": "AdlsGen2",
+      "adlsGen2": {
+        "connectionId": "3185a3a9-be0e-438a-abb6-fc448dd49d85",
+        "location": "https://fabricdemotrustworkspace.dfs.core.windows.net",
+        "subpath": "/bairddemofiles"
+      }
+    }
+  }
+]

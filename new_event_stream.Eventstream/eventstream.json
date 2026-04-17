@@ -1,0 +1,33 @@
+{
+  "sources": [
+    {
+      "id": "a79c848a-bb9c-4b48-ae63-59eec390c36f",
+      "name": "EventLinks",
+      "type": "AzureBlobStorageEvents",
+      "properties": {
+        "azureBlobStorageEvents": [
+          {
+            "id": "b322b68e-2756-4764-b0d3-5f7800ae053b",
+            "azureResourceId": "/subscriptions/7c77785e-55b1-434e-914a-f520f3234923/resourceGroups/fabric-dataai/providers/microsoft.storage/storageaccounts/fabricdemotrustworkspace",
+            "includedEventTypes": [
+              "Microsoft.Storage.BlobCreated"
+            ]
+          }
+        ],
+        "streamEvents": true
+      }
+    }
+  ],
+  "destinations": [],
+  "streams": [
+    {
+      "id": "487fbc8f-5eea-44f4-ad5f-ab2ce836562b",
+      "name": "new_event_stream-stream",
+      "type": "DefaultStream",
+      "properties": {},
+      "inputNodes": []
+    }
+  ],
+  "operators": [],
+  "compatibilityLevel": "1.1"
+}
