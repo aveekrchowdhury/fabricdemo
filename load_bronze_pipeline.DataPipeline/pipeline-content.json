@@ -4,19 +4,19 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
-          "notebookId": "7e271318-b8bb-a43e-4d6b-e339d1b49dfc",
+          "notebookId": "794b18d7-7165-8833-4e9d-3efba871d874",
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
-            "subfolder": {
+            "file_name": {
               "value": {
-                "value": "@split(pipeline().TriggerEvent.Subject, '/')[6]",
+                "value": "@split(pipeline().TriggerEvent.Subject, '/')[9]",
                 "type": "Expression"
               },
               "type": "string"
             },
             "entity_name ": {
               "value": {
-                "value": "@split(pipeline().TriggerEvent.Subject, '/')[7]",
+                "value": "@split(pipeline().TriggerEvent.Subject, '/')[8]",
                 "type": "Expression"
               },
               "type": "string"
@@ -33,8 +33,157 @@
           "secureInput": false,
           "secureOutput": false
         },
-        "name": "Notebook1",
+        "name": "ingest_bronze_raw",
         "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "c67b7425-b5ab-b3a3-4372-e7341ee3eb1c",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "file_name_filter": {
+              "value": {
+                "value": "@split(pipeline().TriggerEvent.Subject, '/')[9]",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "entity_name ": {
+              "value": {
+                "value": "@split(pipeline().TriggerEvent.Subject, '/')[8]",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "schema_name": {
+              "value": "dbo",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "validate_bronze",
+        "dependsOn": [
+          {
+            "activity": "ingest_bronze_raw",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Office365Email",
+        "typeProperties": {
+          "body": "<p>The Following Pipeline failed one of the Validation. Please find details below :</p>\n",
+          "to": "aveekr@microsoft.com",
+          "subject": "Bronze Pipeline Validation Failed",
+          "from": "aveekr@microsoft.com",
+          "importance": "High"
+        },
+        "externalReferences": {
+          "connection": "5853c9a6-e84c-4511-884e-dc705f2ae588"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Office365Email1",
+        "dependsOn": [
+          {
+            "activity": "validate_bronze",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(\n  json(activity('validate_bronze').output.result.exitValue).overall_status,\n  'FAILED'\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "type": "Office365Email",
+              "typeProperties": {
+                "body": "<p>@{concat(\n  'POS Bronze validation failed.', \n  '<br><br>Failed file count: ',\n  string(json(activity('validate_bronze').output.result.exitValue).failed_file_count),\n  '<br><br>Details:<br>',\n  string(json(activity('validate_bronze').output.result.exitValue).html_body)\n)}</p>",
+                "to": "aveekr@microsoft.com",
+                "subject": "POS File Failed Validation",
+                "from": "aveekr@microsoft.com"
+              },
+              "externalReferences": {
+                "connection": "d0a26645-a456-4726-a06c-1f21cea19fea"
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "send_validation_failure_email",
+              "dependsOn": []
+            }
+          ],
+          "ifFalseActivities": [
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "be3e16c1-c77c-8cdb-4596-5f4d0fc9fab2",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "file_name_filter": {
+                    "value": {
+                      "value": "@split(pipeline().TriggerEvent.Subject, '/')[6]",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "entity_name ": {
+                    "value": {
+                      "value": "@split(pipeline().TriggerEvent.Subject, '/')[7]",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "schema_name": {
+                    "value": "dbo",
+                    "type": "string"
+                  }
+                }
+              },
+              "policy": {
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "manifest_bronze",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "Validate Pipeline_output",
+        "dependsOn": [
+          {
+            "activity": "validate_bronze",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ]
   }
